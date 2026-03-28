@@ -53,17 +53,11 @@ FILLER_WORDS = {
 }
 
 TRUST_SCORES = {
-    "bbc": 0.95,
-    "reuters": 0.95,
-    "apnews": 0.93,
-    "ap news": 0.93,
-    "who.int": 0.98,
-    "cdc.gov": 0.98,
-    "nature.com": 0.97,
-    "science.org": 0.97,
-    "nytimes.com": 0.9,
-    "theguardian.com": 0.9,
-    "cnn.com": 0.85,
+    "bbc": 1.0,
+    "reuters": 1.0,
+    "who": 1.0,
+    "cdc": 1.0,
+    "nytimes": 1.0,
 }
 
 
@@ -126,9 +120,9 @@ def detect_stance(text: str) -> str:
 
 def get_source_score(url: str) -> float:
     lowered = (url or "").lower()
-    for key, score in TRUST_SCORES.items():
+    for key in TRUST_SCORES:
         if key in lowered:
-            return score
+            return 1.0
     return 0.5
 
 

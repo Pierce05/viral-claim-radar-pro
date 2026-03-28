@@ -79,6 +79,7 @@ def boot_state() -> None:
     st.session_state.setdefault("region", "Global")
     st.session_state.setdefault("topic", "All")
     st.session_state.setdefault("live_filter_signature", ("Global", "All"))
+    st.session_state.setdefault("portal_open", False)
 
 
 def verdict_meta(label: str) -> tuple[str, str, str]:
@@ -153,6 +154,91 @@ def inject_styles() -> None:
             box-shadow: none;
             border-radius: 12px;
         }}
+        .portal-shell {{
+            min-height: 76vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .portal-card {{
+            width: min(760px, 92vw);
+            text-align: center;
+            padding: 2.2rem 2rem 2rem;
+            background: radial-gradient(circle at top, rgba(56,189,248,.16), rgba(11,18,32,.96) 60%);
+            border: 1px solid rgba(56,189,248,.28);
+            border-radius: 24px;
+            box-shadow: 0 0 0 1px rgba(56,189,248,.12), 0 24px 80px rgba(2,8,23,.6);
+        }}
+        .portal-ring {{
+            width: 170px;
+            height: 170px;
+            margin: 0 auto 1.2rem;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle, rgba(56,189,248,.3) 0 26%, transparent 27%),
+                radial-gradient(circle, transparent 48%, rgba(56,189,248,.18) 49%, rgba(56,189,248,.04) 58%, transparent 59%),
+                conic-gradient(from 180deg, rgba(56,189,248,.15), rgba(56,189,248,.7), rgba(56,189,248,.15));
+            box-shadow: 0 0 60px rgba(56,189,248,.25);
+        }}
+        .portal-shield {{
+            width: 92px;
+            height: 108px;
+            clip-path: polygon(50% 0%, 88% 16%, 88% 58%, 50% 100%, 12% 58%, 12% 16%);
+            background: linear-gradient(180deg, #7dd3fc, #0ea5e9 48%, #0f172a 100%);
+            border: 2px solid rgba(255,255,255,.4);
+            position: relative;
+            box-shadow: inset 0 0 18px rgba(255,255,255,.22), 0 0 24px rgba(56,189,248,.4);
+        }}
+        .portal-shield::before {{
+            content: "";
+            position: absolute;
+            inset: 14px;
+            clip-path: inherit;
+            background:
+                radial-gradient(circle at center, rgba(56,189,248,.5), transparent 46%),
+                linear-gradient(180deg, #0b1220, #111827);
+            border: 1px solid rgba(125,211,252,.5);
+        }}
+        .portal-title {{
+            font-size: 3rem;
+            line-height: 1;
+            font-weight: 800;
+            margin: 0 0 .7rem;
+        }}
+        .portal-copy {{
+            color: #b8c7d9;
+            max-width: 560px;
+            margin: 0 auto 1.2rem;
+            line-height: 1.8;
+            font-size: 1.02rem;
+        }}
+        .hero-brand {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }}
+        .hero-badge {{
+            width: 68px;
+            height: 78px;
+            clip-path: polygon(50% 0%, 88% 16%, 88% 58%, 50% 100%, 12% 58%, 12% 16%);
+            background: linear-gradient(180deg, #7dd3fc, #0ea5e9 48%, #0f172a 100%);
+            border: 1px solid rgba(255,255,255,.35);
+            box-shadow: inset 0 0 18px rgba(255,255,255,.18), 0 0 22px rgba(56,189,248,.22);
+            position: relative;
+            flex: 0 0 auto;
+        }}
+        .hero-badge::before {{
+            content: "";
+            position: absolute;
+            inset: 10px;
+            clip-path: inherit;
+            background:
+                radial-gradient(circle at center, rgba(56,189,248,.48), transparent 48%),
+                linear-gradient(180deg, #0b1220, #111827);
+            border: 1px solid rgba(125,211,252,.45);
+        }}
         .hero {{
             padding: 1.5rem 1.7rem;
         }}
@@ -212,6 +298,19 @@ def inject_styles() -> None:
             font-size: 1.55rem;
             font-weight: 600;
             margin: 0;
+        }}
+        .radar-controls {{
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr .9fr;
+            gap: 1rem;
+            align-items: end;
+            margin-top: 1rem;
+        }}
+        .feed-summary {{
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: .8rem;
+            margin-bottom: 1rem;
         }}
         .divider {{
             height: 1px;
@@ -428,6 +527,27 @@ def metric_card(label: str, value: Any, color: str) -> None:
     )
 
 
+def render_portal_intro() -> None:
+    st.markdown(
+        """
+        <div class="portal-shell">
+          <div class="portal-card">
+            <div class="eyebrow">SHIELD ACCESS NODE</div>
+            <div class="portal-ring"><div class="portal-shield"></div></div>
+            <div class="portal-title">Viral Claim Radar PRO++</div>
+            <div class="portal-copy">A live cyber-intelligence portal for claims, misinformation tracking, and topic-level briefing feeds. Enter the shield to open mission control.</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    left, center, right = st.columns([1.4, 1, 1.4])
+    with center:
+        if st.button("Enter Shield Portal", use_container_width=True):
+            st.session_state["portal_open"] = True
+            st.rerun()
+
+
 def render_sidebar(stats: dict, records: list[dict]) -> None:
     with st.sidebar:
         st.markdown(
@@ -566,11 +686,19 @@ def render_live_feed(results: dict | None) -> None:
     if not results:
         st.markdown('<div class="hint-box">Refresh the local feed to populate Live Radar.</div>', unsafe_allow_html=True)
         return
+    assessments = results.get("assessments", []) or []
+    high_authority = sum(1 for item in assessments if item.get("authority_label") == "High Authority")
+    supported = sum(1 for item in assessments if item.get("label") == "Supported")
+    refuted = sum(1 for item in assessments if item.get("label") == "Refuted")
     st.markdown(
         f'<div class="panel" style="margin-bottom:1rem;"><div class="kicker">Active Feed</div><div class="muted" style="margin-top:.55rem;">Region: <strong style="color:{TEXT};">{esc(results.get("region","Global"))}</strong> · Topic: <strong style="color:{TEXT};">{esc(results.get("topic","All"))}</strong> · Source mode: <strong style="color:{TEXT};">{esc(results.get("source","cached"))}</strong></div></div>',
         unsafe_allow_html=True,
     )
-    for item in results.get("assessments", []):
+    st.markdown(
+        f'<div class="feed-summary"><div class="briefing-metric"><div class="briefing-label">Items</div><div class="briefing-value">{len(assessments)}</div></div><div class="briefing-metric"><div class="briefing-label">High Authority</div><div class="briefing-value">{high_authority}</div></div><div class="briefing-metric"><div class="briefing-label">Supported</div><div class="briefing-value">{supported}</div></div><div class="briefing-metric"><div class="briefing-label">Refuted</div><div class="briefing-value">{refuted}</div></div></div>',
+        unsafe_allow_html=True,
+    )
+    for item in assessments:
         label = item.get("label", "Uncertain")
         badge, color, glow = verdict_meta(label)
         st.markdown(
@@ -583,18 +711,18 @@ def render_live_feed(results: dict | None) -> None:
 
 
 def fallback_bars(rows: list[dict], label_key: str, value_key: str, fill: str) -> None:
-    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+    html_parts = ['<div class="chart-box">']
     if rows:
         max_value = max(pct(row.get(value_key, 0)) for row in rows) or 1
         for row in rows:
             width = pct(row.get(value_key, 0)) / max_value * 100
-            st.markdown(
-                f'<div class="bar-row"><div class="bar-meta"><span>{esc(row.get(label_key,"Unknown"))}</span><span>{pct(row.get(value_key,0)):.0f}</span></div><div class="bar-track"><div class="bar-fill" style="width:{width}%; background:{fill};"></div></div></div>',
-                unsafe_allow_html=True,
+            html_parts.append(
+                f'<div class="bar-row"><div class="bar-meta"><span>{esc(row.get(label_key,"Unknown"))}</span><span>{pct(row.get(value_key,0)):.0f}</span></div><div class="bar-track"><div class="bar-fill" style="width:{width}%; background:{fill};"></div></div></div>'
             )
     else:
-        st.markdown('<div class="muted">No chart data available yet.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        html_parts.append('<div class="muted">No chart data available yet.</div>')
+    html_parts.append("</div>")
+    st.markdown("".join(html_parts), unsafe_allow_html=True)
 
 
 def plot_or_fallback(kind: str, rows: list[dict], distribution: dict | None = None, label_key: str = "", value_key: str = "", color: str = PRIMARY, horizontal: bool = False) -> None:
@@ -658,12 +786,16 @@ def main() -> None:
     boot_state()
     inject_styles()
 
+    if not st.session_state.get("portal_open", False):
+        render_portal_intro()
+        return
+
     records = cached_dataset()
     stats = get_dataset_stats(records)
     render_sidebar(stats, records)
 
     st.markdown(
-        f'<div class="hero"><div class="eyebrow">CYBER INTELLIGENCE DASHBOARD</div><div class="hero-title">Viral Claim Radar PRO++</div><div class="hero-sub">Real-Time Claim Intelligence Platform for offline-safe demos, structured evidence review, and threat-signal analysis.</div><div style="margin-top:1rem;"><span class="status-chip">LOCAL-FIRST</span><span class="status-chip">OFFLINE SAFE</span><span class="status-chip">NO API REQUIRED</span><span class="status-chip">SYSTEM READY</span></div></div>',
+        f'<div class="hero"><div class="hero-brand"><div class="hero-badge"></div><div><div class="eyebrow">CYBER INTELLIGENCE DASHBOARD</div><div class="hero-title">Viral Claim Radar PRO++</div></div></div><div class="hero-sub" style="margin-top:1rem;">Real-Time Claim Intelligence Platform for offline-safe demos, structured evidence review, and threat-signal analysis.</div><div style="margin-top:1rem;"><span class="status-chip">LOCAL-FIRST</span><span class="status-chip">OFFLINE SAFE</span><span class="status-chip">NO API REQUIRED</span><span class="status-chip">SYSTEM READY</span></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -721,7 +853,7 @@ def main() -> None:
 
     with live_tab:
         st.markdown('<h2 class="section-title">Live Radar</h2><div class="muted">A structured intelligence feed with region controls, verdict glow, and confidence signals.</div>', unsafe_allow_html=True)
-        c1, c2, c3, _ = st.columns([1.15, 1.15, 1.05, 1.75])
+        c1, c2, c3 = st.columns([1.2, 1.2, 0.95], vertical_alignment="bottom")
         with c1:
             regions = get_available_regions()
             idx = regions.index(st.session_state.get("region", "Global")) if st.session_state.get("region", "Global") in regions else 0
@@ -740,7 +872,7 @@ def main() -> None:
                     topic=st.session_state.get("topic", "All"),
                     dataset=records,
                     news_api_key=os.getenv("NEWS_API_KEY"),
-                    max_items=6,
+                    max_items=7,
                 )
                 st.session_state["live_results"] = live
                 st.session_state["live_history"] = live.get("assessments", [])

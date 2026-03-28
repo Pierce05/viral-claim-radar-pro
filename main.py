@@ -108,6 +108,9 @@ def run_fact_check(
         else:
             adjusted_verdict = base_verdict
 
+        if len(sources) < 2:
+            adjusted_verdict = "UNCERTAIN"
+
         if claim_type == "current_event" and len(sources) >= 2 and adjusted_verdict == base_verdict:
             adjusted_verdict = "LIKELY TRUE"
 

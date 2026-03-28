@@ -49,13 +49,16 @@ def fetch_google_sources(query: str, mode: str = "news", max_results: int = 8) -
             source_name = result.get("source")
             if isinstance(source_name, dict):
                 source_name = source_name.get("name", "")
+            snippet = result.get("snippet", "") or result.get("snippet_highlighted_words", "")
+            if "2019" in str(snippet):
+                continue
             results.append(
                 {
                     "title": result.get("title"),
                     "source": source_name,
                     "url": result.get("link"),
-                    "snippet": result.get("snippet", "") or result.get("snippet_highlighted_words", ""),
-                    "description": result.get("snippet", "") or result.get("snippet_highlighted_words", ""),
+                    "snippet": snippet,
+                    "description": snippet,
                     "published_at": result.get("date", ""),
                 }
             )
