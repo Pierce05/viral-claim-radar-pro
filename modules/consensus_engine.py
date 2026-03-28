@@ -143,3 +143,20 @@ def assess_credibility(update: dict, dataset: list[dict] | None = None) -> dict:
 def assess_batch(updates: list[dict], dataset: list[dict] | None = None) -> list[dict]:
     safe_updates = updates or []
     return [assess_credibility(update, dataset=dataset) for update in safe_updates]
+
+
+def compute_source_consensus(sources: list[dict]) -> dict:
+    support = 0
+    refute = 0
+
+    for source in sources or []:
+        text = f"{source.get('title', '')} {source.get('description', '')}".lower()
+        if any(keyword in text for keyword in ["no evidence", "false", "myth", "debunked"]):
+            refute += 1
+        elif any(keyword in text for keyword in ["study shows", "confirmed", "research finds"]):
+            support += 1
+
+    return {
+        "support": support,
+        "refute": refute,
+    }

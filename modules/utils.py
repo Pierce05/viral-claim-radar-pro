@@ -20,6 +20,13 @@ LABEL_COLORS = {
 }
 
 VALID_LABELS = {"Supported", "Refuted", "Uncertain"}
+TRUSTED_SOURCES = {
+    "WHO": 0.95,
+    "CDC": 0.95,
+    "Reuters": 0.9,
+    "BBC News": 0.9,
+    "Nature": 0.95,
+}
 
 
 def get_project_root() -> str:
@@ -106,3 +113,26 @@ def keyword_overlap_score(a: Any, b: Any) -> float:
     if not a_tokens or not b_tokens:
         return 0.0
     return round((len(a_tokens & b_tokens) / len(a_tokens | b_tokens)) * 100, 2)
+
+
+def compute_source_trust(sources: list[dict]) -> float:
+    scores: list[float] = []
+    for source in sources or []:
+        src = clean_sentence(source.get("source", ""))
+        scores.append(TRUSTED_SOURCES.get(src, 0.5))
+    if not scores:
+        return 0.5
+    return sum(scores) / len(scores)
+
+
+def generate_explanation(result: dict[str, Any]) -> str:
+    consensus = result.get("consensus", {}) or {}
+    trust = float(result.get("trust_score", 0.5) or 0.5)
+    final_verdict = result.get("adjusted_verdict", result.get("verdict", result.get("label", "UNCERTAIN")))
+    return (
+        f"This claim is classified as {final_verdict} because:\n\n"
+        f"\u2022 {consensus.get('refute', 0)} sources contradict the claim\n"
+        f"\u2022 {consensus.get('support', 0)} sources support it\n"
+        f"\u2022 Average source credibility: {round(trust, 2)}\n"
+        f"\u2022 Verdict combines dataset similarity + real-world evidence"
+    )

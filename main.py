@@ -11,11 +11,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modules.claim_extractor import extract_claims
 from modules.classifier import classify_claim
-from modules.consensus_engine import assess_batch
+from modules.consensus_engine import assess_batch, compute_source_consensus
 from modules.dataset_loader import get_dataset_stats, load_claims_dataset
 from modules.retriever import retrieve_top_k
+from modules.source_fetcher import fetch_news_sources, fetch_wikipedia_summary
 from modules.update_fetcher import fetch_updates, get_available_regions
-from modules.utils import LABEL_EMOJIS, format_confidence_bar, validate_claim_input
+from modules.utils import LABEL_EMOJIS, compute_source_trust, format_confidence_bar, generate_explanation, validate_claim_input
 
 
 def run_fact_check(
@@ -43,18 +44,36 @@ def run_fact_check(
     for claim in claims:
         top_matches = retrieve_top_k(claim, dataset=records, top_k=max(1, top_k))
         classification = classify_claim(claim, top_matches=top_matches, use_llm=use_llm, api_key=api_key)
-        results.append(
-            {
-                "claim": claim,
-                "label": classification["label"],
-                "confidence": classification["confidence"],
-                "explanation": classification["explanation"],
-                "matched_claim": classification.get("matched_claim", ""),
-                "source": classification.get("source", ""),
-                "method": classification.get("method", "rule-based-similarity"),
-                "top_matches": top_matches,
-            }
-        )
+        sources = fetch_news_sources(claim)
+        consensus = compute_source_consensus(sources)
+        trust_score = compute_source_trust(sources)
+        base_verdict = classification["label"].upper()
+        if consensus["refute"] > consensus["support"]:
+            adjusted_verdict = "REFUTED"
+        elif consensus["support"] > consensus["refute"]:
+            adjusted_verdict = "SUPPORTED"
+        else:
+            adjusted_verdict = base_verdict
+
+        result = {
+            "claim": claim,
+            "label": classification["label"],
+            "verdict": base_verdict,
+            "confidence": classification["confidence"],
+            "matched_claim": classification.get("matched_claim", ""),
+            "source": classification.get("source", ""),
+            "method": classification.get("method", "rule-based-similarity"),
+            "top_matches": top_matches,
+            "sources": sources,
+            "consensus": consensus,
+            "adjusted_verdict": adjusted_verdict,
+            "trust_score": trust_score,
+            "enhanced_confidence": round(((float(classification.get("confidence", 0)) / 100.0) * 0.6) + (trust_score * 0.4), 2),
+        }
+        if not sources:
+            result["wiki"] = fetch_wikipedia_summary(claim)
+        result["explanation"] = generate_explanation(result)
+        results.append(result)
 
     return {
         "results": results,
