@@ -25,6 +25,32 @@ from modules.insight_engine import generate_insights
 from modules.update_fetcher import get_available_regions
 from modules.utils import confidence_to_label
 
+st.markdown(
+    """
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+    html, body, [class*="css"] {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    h1, h2, h3 {
+        font-family: 'Orbitron', 'Inter', system-ui, -apple-system, sans-serif;
+        letter-spacing: 0.5px;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    code, pre, .mono, .stCodeBlock, textarea, input {
+        font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 BG = "#060912"
 BG2 = "#0B1220"
 PRIMARY = "#38BDF8"
