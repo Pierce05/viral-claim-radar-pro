@@ -150,10 +150,11 @@ def compute_source_consensus(sources: list[dict]) -> dict:
     refute = 0
 
     for source in sources or []:
+        stance = str(source.get("stance", "")).upper()
         text = f"{source.get('title', '')} {source.get('description', '')}".lower()
-        if any(keyword in text for keyword in ["no evidence", "false", "myth", "debunked"]):
+        if stance == "REFUTES" or any(keyword in text for keyword in ["no evidence", "false", "myth", "debunked"]):
             refute += 1
-        elif any(keyword in text for keyword in ["study shows", "confirmed", "research finds"]):
+        elif stance == "SUPPORTS" or any(keyword in text for keyword in ["study shows", "confirmed", "research finds"]):
             support += 1
 
     return {

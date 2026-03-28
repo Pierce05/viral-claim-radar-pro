@@ -1,5 +1,13 @@
 [
   {
+    "claim": "The Earth is flat.",
+    "label": "Refuted",
+    "explanation": "Multiple lines of evidence show the Earth is an oblate sphere, including satellite imagery and circumnavigation.",
+    "source": "NASA Earth science guidance",
+    "topic": "Space & Astronomy",
+    "keywords": ["earth flat", "flat earth", "earth shape"]
+  },
+  {
     "claim": "The Great Wall of China is visible from space with the naked eye.",
     "label": "Refuted",
     "explanation": "Astronauts have repeatedly explained that it is not uniquely visible without aid.",

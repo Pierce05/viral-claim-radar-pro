@@ -53,7 +53,11 @@ def classify_claim(
     second_score = clamp(matches[1].get("similarity_score", 0)) if len(matches) > 1 else 0
     best_margin = best_score - second_score
 
-    if best_score >= 72 or overlap >= 58 or (best_score >= 40 and best_margin >= 20):
+    if best_score < 18 and overlap < 18:
+        confidence = clamp(26 + adjustment, 5, 70)
+        label = "Uncertain"
+        explanation = "No strong local evidence match was found, so weak unrelated matches were ignored."
+    elif best_score >= 72 or overlap >= 58 or (best_score >= 40 and best_margin >= 20):
         confidence = clamp(best_score * 0.82 + 18 + adjustment, 5, 98)
         label = best_label
         explanation = (

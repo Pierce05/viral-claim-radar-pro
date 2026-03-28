@@ -116,23 +116,37 @@ def keyword_overlap_score(a: Any, b: Any) -> float:
 
 
 def compute_source_trust(sources: list[dict]) -> float:
-    scores: list[float] = []
-    for source in sources or []:
-        src = clean_sentence(source.get("source", ""))
-        scores.append(TRUSTED_SOURCES.get(src, 0.5))
-    if not scores:
-        return 0.5
-    return sum(scores) / len(scores)
+    try:
+        from modules.source_fetcher import compute_trust_score
+
+        score = compute_trust_score(sources)
+        return score if score > 0 else 0.5
+    except Exception:
+        scores: list[float] = []
+        for source in sources or []:
+            src = clean_sentence(source.get("source", ""))
+            scores.append(TRUSTED_SOURCES.get(src, 0.5))
+        if not scores:
+            return 0.5
+        return sum(scores) / len(scores)
 
 
 def generate_explanation(result: dict[str, Any]) -> str:
     consensus = result.get("consensus", {}) or {}
     trust = float(result.get("trust_score", 0.5) or 0.5)
     final_verdict = result.get("adjusted_verdict", result.get("verdict", result.get("label", "UNCERTAIN")))
+    refute = consensus.get("refute", 0)
+    support = consensus.get("support", 0)
+    if not refute and not support:
+        consensus_line = "\u2022 No strong consensus detected. Limited high-confidence sources."
+    else:
+        consensus_line = (
+            f"\u2022 {refute} sources contradict the claim\n"
+            f"\u2022 {support} sources support it"
+        )
     return (
         f"This claim is classified as {final_verdict} because:\n\n"
-        f"\u2022 {consensus.get('refute', 0)} sources contradict the claim\n"
-        f"\u2022 {consensus.get('support', 0)} sources support it\n"
+        f"{consensus_line}\n"
         f"\u2022 Average source credibility: {round(trust, 2)}\n"
         f"\u2022 Verdict combines dataset similarity + real-world evidence"
     )

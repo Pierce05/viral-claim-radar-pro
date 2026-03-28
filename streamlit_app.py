@@ -22,7 +22,7 @@ from main import run_fact_check, run_live_updates
 from modules.claim_extractor import extract_claims
 from modules.dataset_loader import get_dataset_stats, load_claims_dataset
 from modules.insight_engine import generate_insights
-from modules.update_fetcher import get_available_regions
+from modules.update_fetcher import get_available_regions, get_available_topics
 from modules.utils import confidence_to_label
 
 BG = "#060912"
@@ -77,6 +77,8 @@ def boot_state() -> None:
     st.session_state.setdefault("live_history", [])
     st.session_state.setdefault("fact_input", SAMPLE_SINGLE)
     st.session_state.setdefault("region", "Global")
+    st.session_state.setdefault("topic", "All")
+    st.session_state.setdefault("live_filter_signature", ("Global", "All"))
 
 
 def verdict_meta(label: str) -> tuple[str, str, str]:
@@ -220,12 +222,90 @@ def inject_styles() -> None:
             padding: 1rem 1.1rem;
             margin-bottom: 1rem;
         }}
+        .briefing-card {{
+            background: #111827;
+            border: 1px solid #223047;
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            margin-bottom: .9rem;
+        }}
+        .briefing-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .75rem;
+            margin: .8rem 0 1rem 0;
+        }}
+        .briefing-metric {{
+            background: #0f172a;
+            border: 1px solid #223047;
+            border-radius: 12px;
+            padding: .85rem .95rem;
+        }}
+        .briefing-label {{
+            color: #9fb0c7;
+            font-size: .78rem;
+            font-weight: 600;
+            margin-bottom: .3rem;
+        }}
+        .briefing-value {{
+            color: #e8eef7;
+            font-size: 1rem;
+            line-height: 1.5;
+        }}
+        .briefing-note {{
+            color: #9fb0c7;
+            line-height: 1.7;
+            margin-top: .7rem;
+        }}
+        .source-item {{
+            background: #0f172a;
+            border: 1px solid #223047;
+            border-radius: 12px;
+            padding: .85rem .95rem;
+            margin-bottom: .7rem;
+        }}
+        .source-title {{
+            color: #f8fafc;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: .3rem;
+        }}
+        .source-meta {{
+            color: #9fb0c7;
+            font-size: .85rem;
+            line-height: 1.6;
+        }}
+        .reading-card {{
+            background: #0f172a;
+            border: 1px solid #223047;
+            border-radius: 12px;
+            padding: .95rem 1rem;
+            margin: .75rem 0;
+        }}
+        .reading-title {{
+            color: #e8eef7;
+            font-size: .95rem;
+            font-weight: 700;
+            margin-bottom: .35rem;
+        }}
+        .reading-body {{
+            color: #c2d0e1;
+            line-height: 1.75;
+            font-size: .98rem;
+        }}
         .kicker {{
             color: {MUTED};
             font-size: .73rem;
             letter-spacing: .11em;
             text-transform: uppercase;
             font-weight: 700;
+        }}
+        .soft-kicker {{
+            color: #9fb0c7;
+            font-size: .82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
         }}
         .claim-text {{
             margin: .45rem 0 .75rem 0;
@@ -362,12 +442,14 @@ def render_sidebar(stats: dict, records: list[dict]) -> None:
             with st.spinner("Running guided demo flow..."):
                 st.session_state["fact_input"] = SAMPLE_CLAIMS
                 fact = run_fact_check(SAMPLE_CLAIMS, dataset=records, use_llm=False, top_k=3)
-                live = run_live_updates(region="Global", dataset=records, max_items=6)
+                live = run_live_updates(region="Global", topic="All", dataset=records, max_items=6)
                 st.session_state["fact_results"] = fact
                 st.session_state["live_results"] = live
                 st.session_state["fact_history"] = fact.get("results", [])
                 st.session_state["live_history"] = live.get("assessments", [])
                 st.session_state["region"] = "Global"
+                st.session_state["topic"] = "All"
+                st.session_state["live_filter_signature"] = ("Global", "All")
         st.markdown('<div class="sidebar-panel"><div class="kicker">Demo Instructions</div><div class="muted" style="margin-top:.7rem;">1. Load sample claims.<br>2. Analyze verdict cards.<br>3. Open Live Radar.<br>4. Finish in Insights.</div></div>', unsafe_allow_html=True)
 
 
@@ -380,11 +462,26 @@ def confidence_bar(label: str, confidence: Any) -> None:
     )
 
 
+def format_live_timestamp(value: Any) -> str:
+    raw = "" if value is None else str(value).strip()
+    if not raw:
+        return "Timestamp unavailable"
+    try:
+        normalized = raw.replace("Z", "+00:00")
+        stamp = normalized if "T" in normalized else normalized.replace(" ", "T")
+        from datetime import datetime
+
+        return datetime.fromisoformat(stamp).strftime("%d %b %Y · %I:%M %p")
+    except Exception:
+        return raw
+
+
 def render_matches(matches: list[dict]) -> None:
-    if not matches:
+    visible_matches = [match for match in (matches or []) if float(match.get("similarity_score", 0) or 0) >= 20]
+    if not visible_matches:
         return
     with st.expander("Evidence Matches"):
-        for idx, match in enumerate(matches, start=1):
+        for idx, match in enumerate(visible_matches, start=1):
             label = match.get("label", "Uncertain")
             _, color, _ = verdict_meta(label)
             st.markdown(
@@ -407,26 +504,58 @@ def render_fact_results(results: dict | None) -> None:
         trust_score = float(item.get("trust_score", 0.5) or 0.5)
         adjusted_verdict = item.get("adjusted_verdict", badge)
         sources = item.get("sources", []) or []
+        consensus_text = (
+            "No strong consensus detected. Limited high-confidence sources."
+            if not consensus.get("refute", 0) and not consensus.get("support", 0)
+            else f"{consensus.get('refute', 0)} refute • {consensus.get('support', 0)} support"
+        )
         st.markdown(
-            f'<div class="result-card" style="border-left:3px solid {color}; box-shadow:0 0 0 1px {glow}, 0 18px 40px rgba(2,8,23,.44);"><div class="kicker">Live Verdict</div><div class="claim-text">{esc(item.get("claim",""))}</div><div class="verdict-pill" style="color:{color}; background:{glow};">{badge}</div><div class="muted" style="margin-top:.75rem;font-family:IBM Plex Mono, monospace;">Adjusted verdict: {esc(adjusted_verdict)}</div><div class="muted" style="margin-top:.75rem;">{esc(item.get("explanation",""))}</div></div>',
+            f'<div class="result-card" style="border-left:3px solid {color}; box-shadow:0 0 0 1px {glow}, 0 18px 40px rgba(2,8,23,.44);"><div class="soft-kicker">Live Verdict</div><div class="claim-text">{esc(item.get("claim",""))}</div><div class="verdict-pill" style="color:{color}; background:{glow};">{badge}</div><div class="reading-card"><div class="reading-title">Assessment</div><div class="reading-body">{esc(item.get("explanation",""))}</div></div></div>',
             unsafe_allow_html=True,
         )
+        fetch_status = "ACTIVE" if item.get("source_fetch_active") else "INACTIVE"
+        fetch_detail = "Google News live retrieval is active." if item.get("source_fetch_active") else "Google News live retrieval is inactive. Add SERP_API_KEY for real-time sources."
+        st.markdown(
+            f'<div class="briefing-grid"><div class="briefing-metric"><div class="briefing-label">Verdict</div><div class="briefing-value">{esc(adjusted_verdict)}</div></div><div class="briefing-metric"><div class="briefing-label">Live Sources</div><div class="briefing-value">{fetch_status} · {esc(item.get("source_fetch_mode","news"))}</div></div><div class="briefing-metric"><div class="briefing-label">Consensus</div><div class="briefing-value">{esc(consensus_text)}</div></div><div class="briefing-metric"><div class="briefing-label">Credibility</div><div class="briefing-value">{int(trust_score * 100)}/100</div></div></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="reading-card"><div class="reading-title">Search Query</div><div class="reading-body">{esc(item.get("search_query",""))}</div><div class="briefing-note">{esc(fetch_detail)}</div></div>',
+            unsafe_allow_html=True,
+        )
+        if item.get("claim_type") == "current_event" and not item.get("source_fetch_active"):
+            st.warning("Live Google News retrieval is OFF for this current-event claim. Add `SERP_API_KEY` locally or in deployment secrets to verify against real-time reporting.")
         confidence_bar(label, item.get("confidence", 0))
         st.markdown(
-            f'<div class="panel" style="margin:.8rem 0 1rem 0;"><div class="kicker">Consensus</div><div class="muted" style="margin-top:.55rem;font-family:IBM Plex Mono, monospace;">{consensus.get("refute", 0)} refute • {consensus.get("support", 0)} support</div><div class="muted" style="margin-top:.45rem;font-family:IBM Plex Mono, monospace;">Credibility Score: {int(trust_score * 100)}/100</div><div class="muted" style="margin-top:.45rem;font-family:IBM Plex Mono, monospace;">Enhanced Confidence: {int(float(item.get("enhanced_confidence", 0.5) or 0.5) * 100)}/100</div></div>',
+            f'<div class="reading-card"><div class="reading-title">Confidence</div><div class="reading-body">Enhanced confidence: {int(float(item.get("enhanced_confidence", 0.5) or 0.5) * 100)}/100</div></div>',
             unsafe_allow_html=True,
         )
         if sources:
             with st.expander("Sources"):
-                st.markdown("### 🔎 Sources")
+                st.markdown("### Verified Sources")
+                refutes = sum(1 for source in sources if source.get("stance") == "REFUTES")
+                supports = sum(1 for source in sources if source.get("stance") == "SUPPORTS")
+                unclear = sum(1 for source in sources if source.get("stance") not in {"REFUTES", "SUPPORTS"})
+                st.markdown(
+                    f'<div class="reading-card"><div class="reading-title">Source Snapshot</div><div class="reading-body">{refutes} refuting sources, {supports} supporting sources, {unclear} neutral.</div></div>',
+                    unsafe_allow_html=True,
+                )
                 for source in sources:
                     title = source.get("title") or "Untitled source"
                     url = source.get("url") or ""
                     name = source.get("source") or "Unknown source"
-                    if url:
-                        st.markdown(f"- [{title}]({url}) ({name})")
-                    else:
-                        st.markdown(f"- {title} ({name})")
+                    stance = source.get("stance") or "UNCLEAR"
+                    why = source.get("why") or "Matches the verification search intent"
+                    published = source.get("published_at") or ""
+                    score = float(source.get("credibility", 0) or 0)
+                    meta = f"Source: {name} | Credibility: {score:.2f} | Stance: {stance}"
+                    if published:
+                        meta += f" | Published: {published}"
+                    title_line = f'<a href="{esc(url)}" target="_blank" style="color:#f8fafc;text-decoration:none;">{esc(title)}</a>' if url else esc(title)
+                    st.markdown(
+                        f'<div class="source-item"><div class="source-title">{title_line}</div><div class="source-meta">{esc(meta)}</div><div class="briefing-note">Why it was selected: {esc(why)}</div></div>',
+                        unsafe_allow_html=True,
+                    )
         elif item.get("wiki"):
             with st.expander("Wikipedia Fallback"):
                 st.markdown(item.get("wiki", ""))
@@ -437,14 +566,20 @@ def render_live_feed(results: dict | None) -> None:
     if not results:
         st.markdown('<div class="hint-box">Refresh the local feed to populate Live Radar.</div>', unsafe_allow_html=True)
         return
+    st.markdown(
+        f'<div class="panel" style="margin-bottom:1rem;"><div class="kicker">Active Feed</div><div class="muted" style="margin-top:.55rem;">Region: <strong style="color:{TEXT};">{esc(results.get("region","Global"))}</strong> · Topic: <strong style="color:{TEXT};">{esc(results.get("topic","All"))}</strong> · Source mode: <strong style="color:{TEXT};">{esc(results.get("source","cached"))}</strong></div></div>',
+        unsafe_allow_html=True,
+    )
     for item in results.get("assessments", []):
         label = item.get("label", "Uncertain")
         badge, color, glow = verdict_meta(label)
         st.markdown(
-            f'<div class="feed-card" style="border-color:{glow}; box-shadow:0 0 0 1px {glow}, 0 18px 40px rgba(2,8,23,.44);"><div class="kicker">{esc(item.get("category","General"))} · {esc(item.get("region","Global"))}</div><div class="claim-text">{esc(item.get("headline",""))}</div><div class="verdict-pill" style="color:{color}; background:{glow};">{badge}</div><div class="muted" style="margin-top:.85rem;">{esc(item.get("reasoning",""))}</div></div>',
+            f'<div class="feed-card" style="border-color:{glow}; box-shadow:0 0 0 1px {glow}, 0 18px 40px rgba(2,8,23,.44);"><div class="kicker">{esc(item.get("region","Global"))} · {esc(item.get("category","General"))}</div><div class="claim-text">{esc(item.get("headline",""))}</div><div class="verdict-pill" style="color:{color}; background:{glow};">{badge}</div><div class="muted" style="margin-top:.75rem;font-family:IBM Plex Mono, monospace;">Published: {esc(format_live_timestamp(item.get("published_at","")))} · Source: {esc(item.get("source","Unknown source"))}</div><div class="muted" style="margin-top:.35rem;font-family:IBM Plex Mono, monospace;">Signal type: {esc(item.get("count_label","No Clear Source"))} · Authority: {esc(item.get("authority_label","Moderate Authority"))}</div><div class="muted" style="margin-top:.85rem;">{esc(item.get("reasoning",""))}</div></div>',
             unsafe_allow_html=True,
         )
         confidence_bar(label, item.get("confidence", 0))
+        if item.get("url"):
+            st.markdown(f"[Open source article]({item.get('url')})")
 
 
 def fallback_bars(rows: list[dict], label_key: str, value_key: str, fill: str) -> None:
@@ -586,18 +721,30 @@ def main() -> None:
 
     with live_tab:
         st.markdown('<h2 class="section-title">Live Radar</h2><div class="muted">A structured intelligence feed with region controls, verdict glow, and confidence signals.</div>', unsafe_allow_html=True)
-        c1, c2, _ = st.columns([1, 1, 2.4])
+        c1, c2, c3, _ = st.columns([1.15, 1.15, 1.05, 1.75])
         with c1:
             regions = get_available_regions()
             idx = regions.index(st.session_state.get("region", "Global")) if st.session_state.get("region", "Global") in regions else 0
             st.session_state["region"] = st.selectbox("Region", regions, index=idx)
         with c2:
+            topics = get_available_topics()
+            topic_idx = topics.index(st.session_state.get("topic", "All")) if st.session_state.get("topic", "All") in topics else 0
+            st.session_state["topic"] = st.selectbox("Topic", topics, index=topic_idx)
+        with c3:
             refresh = st.button("Refresh Radar", use_container_width=True)
-        if refresh or st.session_state.get("live_results") is None:
+        current_live_signature = (st.session_state.get("region", "Global"), st.session_state.get("topic", "All"))
+        if refresh or st.session_state.get("live_results") is None or st.session_state.get("live_filter_signature") != current_live_signature:
             with st.spinner("Refreshing local radar feed..."):
-                live = run_live_updates(region=st.session_state.get("region", "Global"), dataset=records, max_items=6)
+                live = run_live_updates(
+                    region=st.session_state.get("region", "Global"),
+                    topic=st.session_state.get("topic", "All"),
+                    dataset=records,
+                    news_api_key=os.getenv("NEWS_API_KEY"),
+                    max_items=6,
+                )
                 st.session_state["live_results"] = live
                 st.session_state["live_history"] = live.get("assessments", [])
+                st.session_state["live_filter_signature"] = current_live_signature
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         render_live_feed(st.session_state.get("live_results"))
 
@@ -615,3 +762,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

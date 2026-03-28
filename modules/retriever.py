@@ -16,7 +16,26 @@ except Exception:
     HAS_SKLEARN = False
 
 from modules.dataset_loader import load_claims_dataset
-from modules.utils import keyword_overlap_score
+from modules.utils import keyword_overlap_score, normalize_text, tokenize
+
+
+def _keyword_field_score(query: str, item: dict) -> float:
+    query_text = normalize_text(query)
+    query_tokens = set(tokenize(query_text))
+    score = 0.0
+    for keyword in item.get("keywords", []) or []:
+        keyword_text = normalize_text(keyword)
+        if not keyword_text:
+            continue
+        if keyword_text in query_text:
+            score += 35
+            continue
+        keyword_tokens = set(tokenize(keyword_text))
+        if keyword_tokens and keyword_tokens.issubset(query_tokens):
+            score += 24
+        elif keyword_tokens and query_tokens:
+            score += (len(keyword_tokens & query_tokens) / len(keyword_tokens)) * 18
+    return round(min(score, 100.0), 1)
 
 
 def _can_use_sklearn() -> bool:
@@ -61,13 +80,17 @@ def retrieve_top_k(query: str, dataset: list[dict] | None = None, top_k: int = 3
 
     ranked: list[dict] = []
     for item, score in zip(records, similarities):
-        hybrid_score = max(score * 100, keyword_overlap_score(query, item.get("claim", "")))
+        keyword_score = _keyword_field_score(query, item)
+        overlap_score = keyword_overlap_score(query, item.get("claim", ""))
+        hybrid_score = max(score * 100, overlap_score, keyword_score)
         enriched = dict(item)
         enriched["similarity_score"] = round(hybrid_score, 1)
         ranked.append(enriched)
 
     ranked.sort(key=lambda row: row.get("similarity_score", 0), reverse=True)
-    return ranked[: max(1, top_k)]
+    filtered = [row for row in ranked if float(row.get("similarity_score", 0) or 0) >= 12]
+    shortlist = filtered or ranked[:1]
+    return shortlist[: max(1, top_k)]
 
 
 def find_contradicting_claims(text: str, dataset: list[dict] | None = None, top_k: int = 3) -> list[dict]:
