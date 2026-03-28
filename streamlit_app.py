@@ -25,32 +25,6 @@ from modules.insight_engine import generate_insights
 from modules.update_fetcher import get_available_regions
 from modules.utils import confidence_to_label
 
-st.markdown(
-    """
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-    html, body, [class*="css"] {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-
-    h1, h2, h3 {
-        font-family: 'Orbitron', 'Inter', system-ui, -apple-system, sans-serif;
-        letter-spacing: 0.5px;
-    }
-
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-
-    code, pre, .mono, .stCodeBlock, textarea, input {
-        font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 BG = "#060912"
 BG2 = "#0B1220"
 PRIMARY = "#38BDF8"
@@ -118,130 +92,249 @@ def inject_styles() -> None:
     st.markdown(
         f"""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap');
-        .stApp {{
-            background:
-                radial-gradient(circle at 18% 10%, rgba(56,189,248,0.12), transparent 22%),
-                radial-gradient(circle at 82% 14%, rgba(244,63,94,0.08), transparent 20%),
-                linear-gradient(180deg, {BG} 0%, {BG2} 100%);
-            color:{TEXT};
+        html, body, [class*="css"] {{
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         }}
-        .stApp::before {{
-            content:"";
-            position:fixed;
-            inset:0;
-            pointer-events:none;
-            opacity:.06;
-            background:repeating-linear-gradient(180deg, rgba(255,255,255,.7) 0, rgba(255,255,255,.7) 1px, transparent 2px, transparent 6px);
+        body, .stApp {{
+            background-color: {BG2};
+            color: {TEXT};
+            font-family: system-ui, -apple-system, sans-serif;
         }}
-        .block-container {{ max-width:1480px; padding-top:1.1rem; padding-bottom:3rem; }}
-        [data-testid="stSidebar"] {{ background:linear-gradient(180deg, rgba(11,18,32,.98), rgba(6,9,18,.98)); border-right:1px solid {LINE}; }}
-        [data-testid="stSidebar"] .block-container {{ padding-top:1rem; }}
+        .block-container {{
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            max-width: 1100px;
+        }}
+        h1, h2, h3 {{
+            font-family: system-ui, -apple-system, sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.1px;
+        }}
+        code, pre, textarea, .kicker, .metric-label, .status-chip, .claim-chip, .verdict-pill, .confidence-meta {{
+            font-family: 'IBM Plex Mono', monospace !important;
+        }}
+        [data-testid="stSidebar"] {{
+            background: #0f1522;
+            border-right: 1px solid #1f2937;
+        }}
         div[data-baseweb="textarea"] textarea, .stSelectbox div[data-baseweb="select"] > div {{
-            background:rgba(8,15,26,.98) !important;
-            color:{TEXT} !important;
-            border:1px solid {LINE} !important;
-            border-radius:16px !important;
-            font-family:'IBM Plex Mono', monospace !important;
+            background: #0f172a !important;
+            color: #e5e7eb !important;
+            border: 1px solid #243244 !important;
+            border-radius: 10px !important;
+            padding: 12px !important;
+            font-size: 15px !important;
         }}
         .stButton button {{
-            border-radius:14px !important;
-            border:1px solid rgba(56,189,248,.34) !important;
-            background:linear-gradient(180deg, rgba(11,18,32,.98), rgba(14,24,40,.98)) !important;
-            color:white !important;
-            font-weight:700 !important;
-            box-shadow:0 0 0 1px rgba(56,189,248,.05), 0 14px 28px rgba(2,8,23,.34) !important;
-            transition:all .18s ease !important;
-            min-height:2.8rem !important;
+            border-radius: 10px !important;
+            border: 1px solid #334155 !important;
+            background: #111827 !important;
+            color: #e6edf3 !important;
+            box-shadow: none !important;
         }}
-        .stButton button:hover {{
-            transform:translateY(-1px) scale(1.01);
-            box-shadow:0 0 20px rgba(56,189,248,.15), 0 18px 30px rgba(2,8,23,.4) !important;
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 1rem;
+            border-bottom: 1px solid #1f2937;
         }}
-        .stTabs [data-baseweb="tab-list"] {{ gap:1.4rem; border-bottom:1px solid rgba(148,163,184,.18); }}
-        .stTabs [data-baseweb="tab"] {{ color:rgba(226,232,240,.62); font-weight:700; padding:0 0 .85rem 0; }}
-        .stTabs [aria-selected="true"] {{ color:{TEXT} !important; position:relative; }}
-        .stTabs [aria-selected="true"]::after {{
-            content:"";
-            position:absolute; left:0; right:0; bottom:0; height:3px; border-radius:999px;
-            background:linear-gradient(90deg, {PRIMARY}, {SUCCESS});
-            box-shadow:0 0 18px rgba(56,189,248,.42);
+        .stTabs [data-baseweb="tab"] {{
+            color: #94a3b8;
+            font-weight: 500;
+            padding: 0 0 0.8rem 0;
         }}
-        .hero, .panel, .metric, .sidebar-panel {{
-            background:linear-gradient(180deg, rgba(11,18,32,.98), rgba(15,23,36,.98));
-            border:1px solid {LINE};
-            box-shadow:0 20px 46px rgba(2,8,23,.42);
+        .stTabs [aria-selected="true"] {{
+            color: #e6edf3 !important;
+            border-bottom: 2px solid {PRIMARY};
         }}
-        .hero {{ border-radius:22px; padding:1.55rem 1.8rem; position:relative; overflow:hidden; }}
+        .hero, .panel, .metric, .sidebar-panel, .result-card, .feed-card, .signal-card, .chart-box, .summary-card, .hint-box {{
+            background: #111827;
+            border: 1px solid #1f2937;
+            box-shadow: none;
+            border-radius: 12px;
+        }}
+        .hero {{
+            padding: 1.5rem 1.7rem;
+        }}
         .hero::before {{
-            content:"";
-            position:absolute; inset:-40% -10% auto auto; width:340px; height:340px;
-            background:radial-gradient(circle, rgba(56,189,248,.16), transparent 65%);
-            animation:floatGlow 6s ease-in-out infinite;
+            display: none;
         }}
-        @keyframes floatGlow {{ 0%,100%{{transform:translateY(0)}} 50%{{transform:translateY(14px)}} }}
-        @keyframes pulseLine {{ 0%,100%{{opacity:.55}} 50%{{opacity:1}} }}
-        .eyebrow {{ color:{PRIMARY}; font:700 .78rem 'IBM Plex Mono', monospace; letter-spacing:.28em; text-transform:uppercase; }}
-        .hero-title {{ margin:.45rem 0 .5rem 0; font:800 2.7rem 'Syne', sans-serif; line-height:1.04; letter-spacing:-.03em; }}
-        .hero-sub {{ color:{MUTED}; line-height:1.8; max-width:860px; }}
-        .status-chip {{
-            display:inline-flex; align-items:center; gap:.45rem; padding:.42rem .82rem; margin:.22rem .35rem .1rem 0;
-            border-radius:999px; border:1px solid rgba(56,189,248,.18); background:rgba(56,189,248,.08);
-            font:700 .76rem 'IBM Plex Mono', monospace;
+        .eyebrow {{
+            color: {PRIMARY};
+            font: 700 .76rem 'IBM Plex Mono', monospace;
+            letter-spacing: .18em;
+            text-transform: uppercase;
         }}
-        .metric {{ border-radius:16px; padding:1rem 1.05rem; min-height:122px; transition:all .18s ease; }}
-        .metric:hover {{ transform:translateY(-2px) scale(1.01); box-shadow:0 0 20px rgba(56,189,248,.12), 0 20px 42px rgba(2,8,23,.46); }}
-        .metric-label {{ color:{MUTED}; font:700 .76rem 'IBM Plex Mono', monospace; letter-spacing:.14em; text-transform:uppercase; }}
-        .metric-value {{ margin-top:.78rem; font:800 2rem 'Syne', sans-serif; animation:countIn .6s ease; }}
-        .metric-line {{ width:44px; height:4px; border-radius:999px; margin-top:.82rem; animation:pulseLine 2.2s infinite; }}
-        @keyframes countIn {{ from{{opacity:0; transform:translateY(8px)}} to{{opacity:1; transform:translateY(0)}} }}
-        .section-title {{ font:800 1.6rem 'Syne', sans-serif; margin:0; }}
-        .muted {{ color:{MUTED}; line-height:1.75; }}
-        .divider {{ height:1px; margin:1rem 0; background:linear-gradient(90deg, transparent, rgba(56,189,248,.28), transparent); }}
-        .claim-chip {{
-            display:inline-flex; align-items:center; padding:.42rem .76rem; margin:.2rem .34rem .12rem 0;
-            border-radius:999px; border:1px solid rgba(56,189,248,.16); background:rgba(56,189,248,.08);
-            font:700 .74rem 'IBM Plex Mono', monospace;
+        .hero-title {{
+            margin: .4rem 0 .55rem 0;
+            font-size: 2.35rem;
+            line-height: 1.08;
+            font-weight: 700;
+        }}
+        .hero-sub, .muted {{
+            color: {MUTED};
+            line-height: 1.7;
+        }}
+        .status-chip, .claim-chip {{
+            display: inline-flex;
+            align-items: center;
+            padding: .42rem .75rem;
+            margin: .2rem .32rem .12rem 0;
+            border-radius: 999px;
+            border: 1px solid #243244;
+            background: #0f172a;
+            font-size: .74rem;
+            font-weight: 600;
+        }}
+        .metric {{
+            padding: 1rem;
+            min-height: 112px;
+        }}
+        .metric-label {{
+            color: {MUTED};
+            font-size: .74rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }}
+        .metric-value {{
+            margin-top: .8rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }}
+        .metric-line {{
+            width: 40px;
+            height: 4px;
+            border-radius: 999px;
+            margin-top: .85rem;
+        }}
+        .section-title {{
+            font-size: 1.55rem;
+            font-weight: 600;
+            margin: 0;
+        }}
+        .divider {{
+            height: 1px;
+            margin: 1rem 0;
+            background: #1f2937;
         }}
         .result-card, .feed-card, .signal-card {{
-            border-radius:18px; padding:1.05rem 1.15rem; margin-bottom:1rem; transition:all .18s ease;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
         }}
-        .result-card:hover, .feed-card:hover, .signal-card:hover {{ transform:translateY(-2px) scale(1.005); }}
-        .result-card {{ background:linear-gradient(180deg, rgba(11,18,32,.98), rgba(13,22,35,.98)); border:1px solid {LINE}; }}
-        .feed-card {{ background:linear-gradient(180deg, rgba(11,18,32,.98), rgba(14,22,34,.98)); border:1px solid {LINE}; animation:slideIn .35s ease; }}
-        .signal-card {{ background:linear-gradient(180deg, rgba(42,10,18,.94), rgba(24,10,14,.96)); border:1px solid rgba(244,63,94,.22); border-left:4px solid {DANGER}; box-shadow:0 0 18px rgba(244,63,94,.12); }}
-        @keyframes slideIn {{ from{{opacity:0; transform:translateY(10px)}} to{{opacity:1; transform:translateY(0)}} }}
-        .kicker {{ color:{MUTED}; font:700 .74rem 'IBM Plex Mono', monospace; letter-spacing:.12em; text-transform:uppercase; }}
-        .claim-text {{ margin:.45rem 0 .75rem 0; font:700 1.06rem 'Syne', sans-serif; line-height:1.55; }}
+        .kicker {{
+            color: {MUTED};
+            font-size: .73rem;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }}
+        .claim-text {{
+            margin: .45rem 0 .75rem 0;
+            font-size: 1.08rem;
+            font-weight: 600;
+            line-height: 1.55;
+        }}
         .verdict-pill {{
-            display:inline-flex; padding:.36rem .76rem; border-radius:999px; border:1px solid rgba(255,255,255,.08);
-            font:800 .74rem 'IBM Plex Mono', monospace; letter-spacing:.06em; text-transform:uppercase;
+            display: inline-flex;
+            padding: .35rem .74rem;
+            border-radius: 999px;
+            border: 1px solid #334155;
+            font-size: .74rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
         }}
-        .confidence-meta {{ display:flex; justify-content:space-between; margin:.65rem 0 .34rem 0; color:{MUTED}; font:500 .78rem 'IBM Plex Mono', monospace; }}
-        .confidence-track {{ height:10px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.05); }}
-        .confidence-fill {{ height:10px; border-radius:999px; animation:growBar .7s ease; }}
-        @keyframes growBar {{ from{{width:0 !important}} to{{}} }}
-        .hint-box {{
-            border:1px dashed rgba(56,189,248,.28); border-radius:18px; padding:1.08rem 1.18rem;
-            background:rgba(9,16,26,.82); color:{MUTED};
+        .confidence-meta {{
+            display: flex;
+            justify-content: space-between;
+            margin: .65rem 0 .34rem 0;
+            color: {MUTED};
+            font-size: .78rem;
         }}
-        .summary-card {{ padding:.85rem .95rem; border-radius:14px; background:rgba(16,25,42,.72); border:1px solid rgba(140,163,184,.12); margin-bottom:.55rem; line-height:1.65; }}
-        .chart-box {{ background:rgba(16,25,42,.76); border:1px solid rgba(140,163,184,.12); border-radius:16px; padding:1rem; min-height:250px; }}
-        .bar-row {{ margin-bottom:.78rem; }}
-        .bar-meta {{ display:flex; justify-content:space-between; color:{MUTED}; font:500 .82rem 'IBM Plex Mono', monospace; margin-bottom:.35rem; }}
-        .bar-track {{ height:9px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.05); }}
-        .bar-fill {{ height:9px; border-radius:999px; }}
-        details {{ background:rgba(16,25,42,.6); border:1px solid rgba(140,163,184,.12); border-radius:14px; padding:.8rem .95rem; }}
-        details summary {{ cursor:pointer; color:{PRIMARY}; font-weight:700; }}
-        .status-dot {{ width:9px; height:9px; border-radius:999px; background:{SUCCESS}; display:inline-block; box-shadow:0 0 14px {SUCCESS}; }}
+        .confidence-track {{
+            height: 10px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #1f2937;
+        }}
+        .confidence-fill {{
+            height: 10px;
+            border-radius: 999px;
+        }}
+        .summary-card {{
+            padding: .85rem .95rem;
+            margin-bottom: .55rem;
+            line-height: 1.65;
+        }}
+        .chart-box {{
+            padding: 1rem;
+            min-height: 250px;
+        }}
+        .bar-row {{
+            margin-bottom: .78rem;
+        }}
+        .bar-meta {{
+            display: flex;
+            justify-content: space-between;
+            color: {MUTED};
+            font-size: .82rem;
+            margin-bottom: .35rem;
+        }}
+        .bar-track {{
+            height: 9px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #1f2937;
+        }}
+        .bar-fill {{
+            height: 9px;
+            border-radius: 999px;
+        }}
+        details {{
+            background: #0f172a;
+            border: 1px solid #243244;
+            border-radius: 12px;
+            padding: .8rem .95rem;
+        }}
+        details summary {{
+            cursor: pointer;
+            color: {PRIMARY};
+            font-weight: 600;
+        }}
+        .status-dot {{
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: {SUCCESS};
+            display: inline-block;
+        }}
         .signal-label {{
-            display:inline-flex; align-items:center; gap:.35rem; margin-right:.35rem; padding:.3rem .68rem;
-            border-radius:999px; background:rgba(244,63,94,.12); color:#FFC1CC; border:1px solid rgba(244,63,94,.2);
-            font:800 .72rem 'IBM Plex Mono', monospace; text-transform:uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            margin-right: .35rem;
+            padding: .3rem .68rem;
+            border-radius: 999px;
+            background: #1f1720;
+            color: #fecdd3;
+            border: 1px solid #3f1d2b;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
         }}
-        .signal-strength {{ display:flex; gap:4px; margin-top:.7rem; }}
-        .signal-strength span {{ width:14px; height:6px; border-radius:999px; background:rgba(56,189,248,.16); }}
-        .signal-strength span.on {{ background:{PRIMARY}; box-shadow:0 0 10px rgba(56,189,248,.34); }}
+        .signal-strength {{
+            display: flex;
+            gap: 4px;
+            margin-top: .7rem;
+        }}
+        .signal-strength span {{
+            width: 14px;
+            height: 6px;
+            border-radius: 999px;
+            background: #243244;
+        }}
+        .signal-strength span.on {{
+            background: {PRIMARY};
+        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -458,27 +551,34 @@ def main() -> None:
         left, right = st.columns([1.05, 1.2])
         with left:
             st.markdown('<div class="panel">', unsafe_allow_html=True)
-            claim_input = st.text_area("Claim input", value=st.session_state.get("fact_input", SAMPLE_SINGLE), height=220)
-            st.session_state["fact_input"] = claim_input
-            c1, c2 = st.columns(2)
+            with st.form("claim_form"):
+                user_input = st.text_area(
+                    "Claim input",
+                    placeholder="Paste or type claims here...",
+                    height=150,
+                    key="claim_input",
+                )
+                submitted = st.form_submit_button("Analyze Claim", use_container_width=True)
+            st.session_state["fact_input"] = user_input
+            st.caption("Tip: Paste multiple claims separated by periods for batch analysis")
+            c1, c2 = st.columns([1, 1])
             with c1:
-                analyze = st.button("Analyze Claim", use_container_width=True)
-            with c2:
                 sample = st.button("Load Sample", use_container_width=True)
             if sample:
+                st.session_state["claim_input"] = SAMPLE_CLAIMS
                 st.session_state["fact_input"] = SAMPLE_CLAIMS
                 st.rerun()
             st.markdown('<div class="divider"></div><div class="kicker">Extracted Claims</div>', unsafe_allow_html=True)
-            claims = extract_claims(st.session_state.get("fact_input", ""), use_llm=False, api_key=None).get("claims", [])
+            claims = extract_claims(st.session_state.get("claim_input", st.session_state.get("fact_input", "")), use_llm=False, api_key=None).get("claims", [])
             if claims:
                 for claim in claims[:6]:
                     st.markdown(f'<span class="claim-chip">{esc(claim)}</span>', unsafe_allow_html=True)
             else:
                 st.markdown('<div class="hint-box" style="margin-top:.75rem;">Try a sample claim to generate extracted-claim chips.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-        if analyze:
+        if submitted:
             with st.spinner("Extracting claims, matching evidence, and generating verdicts..."):
-                results = run_fact_check(st.session_state.get("fact_input", SAMPLE_SINGLE), dataset=records, use_llm=False, top_k=3)
+                results = run_fact_check(user_input or SAMPLE_SINGLE, dataset=records, use_llm=False, top_k=3)
                 st.session_state["fact_results"] = results
                 st.session_state["fact_history"] = results.get("results", [])
         with right:
