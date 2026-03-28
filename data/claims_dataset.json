@@ -1,0 +1,98 @@
+[
+  {
+    "claim": "The Great Wall of China is visible from space with the naked eye.",
+    "label": "Refuted",
+    "explanation": "Astronauts have repeatedly explained that it is not uniquely visible without aid.",
+    "source": "NASA astronaut guidance",
+    "topic": "Space & Astronomy",
+    "keywords": ["great wall", "space", "astronaut"]
+  },
+  {
+    "claim": "Climate change is primarily driven by human activities such as burning fossil fuels.",
+    "label": "Supported",
+    "explanation": "Major scientific bodies attribute recent warming mainly to human greenhouse gas emissions.",
+    "source": "IPCC consensus summary",
+    "topic": "Climate & Environment",
+    "keywords": ["climate", "emissions", "fossil fuels"]
+  },
+  {
+    "claim": "Vaccines cause autism in children.",
+    "label": "Refuted",
+    "explanation": "Large studies have found no causal link between vaccines and autism.",
+    "source": "CDC and peer-reviewed studies",
+    "topic": "Health & Medicine",
+    "keywords": ["vaccines", "autism", "children"]
+  },
+  {
+    "claim": "mRNA vaccines change a person's DNA.",
+    "label": "Refuted",
+    "explanation": "mRNA does not enter the nucleus to alter human DNA.",
+    "source": "WHO vaccine explainer",
+    "topic": "Health & Medicine",
+    "keywords": ["mrna", "dna", "vaccine"]
+  },
+  {
+    "claim": "Drinking water helps support healthy hydration and body function.",
+    "label": "Supported",
+    "explanation": "Hydration is essential for normal physiological processes.",
+    "source": "General medical guidance",
+    "topic": "Health & Medicine",
+    "keywords": ["water", "hydration", "health"]
+  },
+  {
+    "claim": "5G mobile networks spread COVID-19.",
+    "label": "Refuted",
+    "explanation": "Viruses are biological and cannot be transmitted by radio waves.",
+    "source": "WHO mythbuster",
+    "topic": "Technology & AI",
+    "keywords": ["5g", "covid", "virus"]
+  },
+  {
+    "claim": "The Moon landing was staged in a film studio.",
+    "label": "Refuted",
+    "explanation": "Apollo missions are supported by physical evidence and independent observations.",
+    "source": "NASA historical record",
+    "topic": "Space & Astronomy",
+    "keywords": ["moon landing", "apollo", "staged"]
+  },
+  {
+    "claim": "Renewable energy capacity has grown rapidly in recent years.",
+    "label": "Supported",
+    "explanation": "Solar and wind deployment trends show sustained growth globally.",
+    "source": "Energy market reporting",
+    "topic": "Climate & Environment",
+    "keywords": ["renewable", "solar", "wind"]
+  },
+  {
+    "claim": "Artificial intelligence can generate convincing deepfake videos.",
+    "label": "Supported",
+    "explanation": "Generative models can synthesize realistic audio and video content.",
+    "source": "AI safety literature",
+    "topic": "Technology & AI",
+    "keywords": ["ai", "deepfake", "video"]
+  },
+  {
+    "claim": "Bitcoin is controlled by a single central bank.",
+    "label": "Refuted",
+    "explanation": "Bitcoin operates on a decentralized network rather than a central bank.",
+    "source": "Blockchain protocol overview",
+    "topic": "Economy & Finance",
+    "keywords": ["bitcoin", "central bank", "crypto"]
+  },
+  {
+    "claim": "Exercise can improve cardiovascular health.",
+    "label": "Supported",
+    "explanation": "Regular physical activity is linked to better heart health outcomes.",
+    "source": "Public health guidance",
+    "topic": "Health & Medicine",
+    "keywords": ["exercise", "heart", "health"]
+  },
+  {
+    "claim": "A miracle supplement cures every cancer with 100 percent success.",
+    "label": "Refuted",
+    "explanation": "Extraordinary cure-all claims without rigorous evidence are not credible.",
+    "source": "Oncology evidence standards",
+    "topic": "Health & Medicine",
+    "keywords": ["miracle", "supplement", "cancer"]
+  }
+]

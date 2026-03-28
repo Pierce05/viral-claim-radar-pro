@@ -1,0 +1,51 @@
+[
+  {
+    "headline": "WHO says seasonal disease monitoring is increasing across several countries",
+    "claim": "Global disease monitoring activity is increasing this season.",
+    "source": "WHO; Reuters",
+    "source_count": 3,
+    "corroborating_sources": ["WHO", "Reuters", "AP"],
+    "conflicting_reports": false,
+    "region": "Health & Science",
+    "category": "Public Health",
+    "published_at": "2026-03-24T09:00:00",
+    "url": ""
+  },
+  {
+    "headline": "Researchers warn viral posts are again claiming vaccines alter DNA",
+    "claim": "Vaccines alter human DNA.",
+    "source": "BBC Verify; CDC",
+    "source_count": 2,
+    "corroborating_sources": ["BBC Verify", "CDC"],
+    "conflicting_reports": true,
+    "contradicting_sources": ["CDC"],
+    "region": "Global",
+    "category": "Misinformation",
+    "published_at": "2026-03-24T10:00:00",
+    "url": ""
+  },
+  {
+    "headline": "Satellite agencies report another year of strong renewable deployment",
+    "claim": "Renewable energy deployment remains strong.",
+    "source": "IEA; Financial Times",
+    "source_count": 2,
+    "corroborating_sources": ["IEA", "Financial Times"],
+    "conflicting_reports": false,
+    "region": "Climate",
+    "category": "Energy",
+    "published_at": "2026-03-24T08:30:00",
+    "url": ""
+  },
+  {
+    "headline": "AI-generated deepfakes are being used in new election misinformation campaigns",
+    "claim": "AI deepfakes are being used in misinformation campaigns.",
+    "source": "AP; Stanford Internet Observatory",
+    "source_count": 2,
+    "corroborating_sources": ["AP", "Stanford Internet Observatory"],
+    "conflicting_reports": false,
+    "region": "Technology",
+    "category": "AI",
+    "published_at": "2026-03-24T11:15:00",
+    "url": ""
+  }
+]
